@@ -1,0 +1,23 @@
+{
+  "name": "whatsapp-agents-manager",
+  "version": "1.0.0",
+  "description": "LLM WhatsApp Agents Manager with auto-reply support",
+  "main": "server/index.js",
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "nodemon server/index.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "better-sqlite3": "^11.7.0",
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "openai": "^4.86.0",
+    "@google/generative-ai": "^0.21.0",
+    "dotenv": "^16.4.7",
+    "cors": "^2.8.5",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.9"
+  }
+}

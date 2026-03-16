@@ -1,0 +1,18 @@
+.chat-bubble-in {
+  background-color: #fff;
+  border-radius: 0 8px 8px 8px;
+}
+.chat-bubble-out {
+  background-color: #DCF8C6;
+  border-radius: 8px 0 8px 8px;
+}
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.mode-badge-off { background-color: #9CA3AF; }
+.mode-badge-semi { background-color: #F59E0B; }
+.mode-badge-full { background-color: #10B981; }
