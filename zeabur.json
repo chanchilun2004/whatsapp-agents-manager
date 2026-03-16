@@ -1,0 +1,9 @@
+{
+  "build_command": "npm install",
+  "start_command": "node server/index.js",
+  "environment": {
+    "PORT": "3000",
+    "APP_DB_PATH": "/data/app.db",
+    "MCP_SSE_URL": "https://alanworkphone.zeabur.app/sse"
+  }
+}
