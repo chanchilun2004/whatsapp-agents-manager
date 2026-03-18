@@ -26,7 +26,7 @@ function getDb() {
     seedSettings.run('mcp_sse_url', config.mcpSseUrl);
     seedSettings.run('openai_api_key', config.openaiApiKey);
     seedSettings.run('gemini_api_key', config.geminiApiKey);
-    seedSettings.run('polling_interval_ms', '60000');
+    seedSettings.run('reminder_recipient_phone', '85291757723');
   }
   return db;
 }

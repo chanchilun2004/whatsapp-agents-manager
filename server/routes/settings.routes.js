@@ -22,7 +22,7 @@ router.get('/', (req, res) => {
 router.put('/', (req, res) => {
   const db = getDb();
   const upsert = db.prepare('INSERT OR REPLACE INTO settings (key, value) VALUES (?, ?)');
-  const allowed = ['mcp_sse_url', 'openai_api_key', 'gemini_api_key', 'polling_interval_ms'];
+  const allowed = ['mcp_sse_url', 'openai_api_key', 'gemini_api_key', 'reminder_recipient_phone'];
   const updates = {};
   for (const [key, value] of Object.entries(req.body)) {
     if (allowed.includes(key)) {

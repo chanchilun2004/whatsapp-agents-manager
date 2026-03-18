@@ -44,6 +44,7 @@ async function approveAndSend(id) {
   const approval = getApprovalById(id);
   if (!approval) throw new Error('Approval not found');
   if (approval.status !== 'pending') throw new Error('Approval is not pending');
+  if (!approval.draft_reply || approval.draft_reply.trim() === '') throw new Error('Cannot send empty reply');
 
   await whatsappService.sendMessage(approval.chat_jid, approval.draft_reply);
 

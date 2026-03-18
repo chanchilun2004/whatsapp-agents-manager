@@ -40,6 +40,32 @@ CREATE TABLE IF NOT EXISTS poll_state (
     last_seen_timestamp DATETIME
 );
 
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    chat_jid TEXT NOT NULL,
+    chat_name TEXT,
+    message_id TEXT,
+    message_sender TEXT,
+    message_text TEXT NOT NULL,
+    message_timestamp DATETIME,
+    reminder_type TEXT NOT NULL CHECK(reminder_type IN ('meeting', 'deadline', 'follow_up', 'task', 'unanswered', 'other')),
+    summary TEXT NOT NULL,
+    urgency TEXT NOT NULL DEFAULT 'normal' CHECK(urgency IN ('low', 'normal', 'high')),
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active', 'sent', 'dismissed')),
+    sent_to TEXT,
+    sent_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS agent_memory (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    memory_type TEXT NOT NULL CHECK(memory_type IN ('daily_log', 'fact')),
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS agent_logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     agent_id INTEGER REFERENCES agents(id) ON DELETE SET NULL,

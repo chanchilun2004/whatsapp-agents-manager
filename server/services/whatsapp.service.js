@@ -22,7 +22,15 @@ async function sendMessage(recipient, message) {
 
 async function getConversationContext(chatJid, messageCount = 20) {
   const messages = await mcpClient.listMessages(chatJid, null, messageCount);
+  // MCP returns DESC (newest first), reverse to chronological order for LLM
+  if (Array.isArray(messages)) {
+    return messages.reverse();
+  }
   return messages;
+}
+
+async function downloadMedia(messageId, chatJid) {
+  return mcpClient.downloadMedia(messageId, chatJid);
 }
 
 module.exports = {
@@ -32,4 +40,5 @@ module.exports = {
   getChat,
   sendMessage,
   getConversationContext,
+  downloadMedia,
 };

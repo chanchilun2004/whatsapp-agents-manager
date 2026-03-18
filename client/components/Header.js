@@ -1,7 +1,8 @@
-const Header = ({ currentPage, setCurrentPage, pendingCount, mcpConnected }) => {
+const Header = ({ currentPage, setCurrentPage, pendingCount, reminderCount, mcpConnected }) => {
   const navItems = [
     { id: 'agents', label: 'Agents' },
     { id: 'approvals', label: 'Approvals', badge: pendingCount },
+    { id: 'reminders', label: 'Reminders', badge: reminderCount },
     { id: 'settings', label: 'Settings' },
   ];
 

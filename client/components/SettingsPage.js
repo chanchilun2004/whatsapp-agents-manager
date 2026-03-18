@@ -13,7 +13,6 @@ const SettingsPage = () => {
         mcp_sse_url: data.mcp_sse_url || '',
         openai_api_key: '',
         gemini_api_key: '',
-        polling_interval_ms: data.polling_interval_ms || '60000',
       });
     } catch (err) {
       console.error('Failed to load settings:', err);
@@ -88,19 +87,6 @@ const SettingsPage = () => {
             className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp"
           />
           <p className="text-xs text-gray-400 mt-1">Leave blank to keep existing key</p>
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Fallback Polling Interval (ms)</label>
-          <input
-            type="number"
-            value={form.polling_interval_ms || '60000'}
-            onChange={e => setForm(prev => ({ ...prev, polling_interval_ms: e.target.value }))}
-            min="10000"
-            step="5000"
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-whatsapp"
-          />
-          <p className="text-xs text-gray-400 mt-1">Safety-net polling (webhook is primary). Default: 60000 (60s)</p>
         </div>
 
         {message && (

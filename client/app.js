@@ -1,4 +1,4 @@
-const { useState, useEffect, useCallback } = React;
+const { useState, useEffect, useRef } = React;
 
 const App = () => {
   const [currentPage, setCurrentPage] = useState('agents');
@@ -8,19 +8,18 @@ const App = () => {
   const [editingAgent, setEditingAgent] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [viewingAgent, setViewingAgent] = useState(null);
+  const [generating, setGenerating] = useState([]);
+  const [reminderCount, setReminderCount] = useState(0);
+  const approvalRefreshRef = useRef(null);
 
-  // Fetch agents
   const fetchAgents = async () => {
     try {
       const res = await fetch('/api/agents');
       const data = await res.json();
       setAgents(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error('Failed to fetch agents:', err);
-    }
+    } catch {}
   };
 
-  // Fetch pending count
   const fetchPendingCount = async () => {
     try {
       const res = await fetch('/api/approvals/count');
@@ -29,7 +28,14 @@ const App = () => {
     } catch {}
   };
 
-  // Fetch status
+  const fetchReminderCount = async () => {
+    try {
+      const res = await fetch('/api/reminders/count');
+      const data = await res.json();
+      setReminderCount(data.count || 0);
+    } catch {}
+  };
+
   const fetchStatus = async () => {
     try {
       const res = await fetch('/api/status');
@@ -38,49 +44,71 @@ const App = () => {
     } catch {}
   };
 
-  // Initial load
   useEffect(() => {
     fetchAgents();
     fetchPendingCount();
+    fetchReminderCount();
     fetchStatus();
     const interval = setInterval(() => {
       fetchPendingCount();
+      fetchReminderCount();
       fetchStatus();
     }, 10000);
     return () => clearInterval(interval);
   }, []);
 
-  // WebSocket for live updates
+  // WebSocket
   useEffect(() => {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
-    ws.onmessage = (event) => {
-      try {
-        const { event: evtType, data } = JSON.parse(event.data);
-        if (evtType === 'new_approval') {
-          fetchPendingCount();
-          // Show notification
-          if (Notification.permission === 'granted') {
-            new Notification('New approval pending', {
-              body: `Agent: ${data.approval?.agent_name || 'Unknown'}`,
+    let ws;
+    const connect = () => {
+      ws = new WebSocket(`${protocol}//${window.location.host}/ws`);
+      ws.onmessage = (event) => {
+        try {
+          const { event: evtType, data } = JSON.parse(event.data);
+          if (evtType === 'generating') {
+            setGenerating(prev => {
+              if (prev.some(g => g.agent_id === data.agent_id && g.trigger_text === data.trigger_text)) return prev;
+              return [{ ...data, step: data.step || 'message_received', startTime: Date.now() }, ...prev];
             });
+          } else if (evtType === 'pipeline_progress') {
+            // Update step for matching generating item
+            setGenerating(prev => prev.map(g =>
+              g.agent_id === data.agent_id ? { ...g, step: data.step } : g
+            ));
+          } else if (evtType === 'new_approval') {
+            setGenerating(prev => prev.filter(g =>
+              !(g.agent_id === data.approval?.agent_id)
+            ));
+            fetchPendingCount();
+            if (approvalRefreshRef.current) approvalRefreshRef.current();
+            if (Notification.permission === 'granted') {
+              new Notification('New approval pending', {
+                body: `Agent: ${data.approval?.agent_name || 'Unknown'}`,
+              });
+            }
+          } else if (evtType === 'reply_sent') {
+            setGenerating(prev => prev.filter(g =>
+              !(g.agent_id === data.agent_id)
+            ));
           }
-        } else if (evtType === 'reply_sent') {
-          // Could show a toast
-        }
-      } catch {}
+        } catch {}
+      };
+      ws.onclose = () => setTimeout(connect, 3000);
     };
-    ws.onclose = () => setTimeout(() => {}, 5000);
-
-    // Request notification permission
-    if (Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-
-    return () => ws.close();
+    connect();
+    if (Notification.permission === 'default') Notification.requestPermission();
+    return () => { if (ws) ws.close(); };
   }, []);
 
-  // Agent CRUD
+  // Auto-clear stale generating items
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setGenerating(prev => prev.filter(g => Date.now() - g.startTime < 60000));
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
   const handleSaveAgent = async (formData) => {
     const method = formData.id ? 'PUT' : 'POST';
     const url = formData.id ? `/api/agents/${formData.id}` : '/api/agents';
@@ -110,21 +138,10 @@ const App = () => {
     fetchAgents();
   };
 
-  const handleEditAgent = (agent) => {
-    setEditingAgent(agent);
-    setShowForm(true);
-  };
-
-  const handleViewConversation = (agent) => {
-    setViewingAgent(agent);
-  };
-
-  // Render current page
   const renderPage = () => {
     if (viewingAgent) {
       return <ConversationViewer agent={viewingAgent} onBack={() => setViewingAgent(null)} />;
     }
-
     if (showForm) {
       return (
         <AgentForm
@@ -134,21 +151,28 @@ const App = () => {
         />
       );
     }
-
     switch (currentPage) {
       case 'agents':
         return (
           <AgentList
             agents={agents}
-            onEdit={handleEditAgent}
+            onEdit={(a) => { setEditingAgent(a); setShowForm(true); }}
             onToggle={handleToggleAgent}
             onDelete={handleDeleteAgent}
-            onViewConversation={handleViewConversation}
+            onViewConversation={setViewingAgent}
             onCreate={() => { setEditingAgent(null); setShowForm(true); }}
           />
         );
       case 'approvals':
-        return <ApprovalQueue onRefresh={fetchPendingCount} />;
+        return (
+          <ApprovalQueue
+            onRefresh={fetchPendingCount}
+            generating={generating}
+            registerRefresh={(fn) => { approvalRefreshRef.current = fn; }}
+          />
+        );
+      case 'reminders':
+        return <RemindersPage />;
       case 'settings':
         return <SettingsPage />;
       default:
@@ -166,7 +190,8 @@ const App = () => {
           setEditingAgent(null);
           setViewingAgent(null);
         }}
-        pendingCount={pendingCount}
+        pendingCount={pendingCount + generating.length}
+        reminderCount={reminderCount}
         mcpConnected={mcpConnected}
       />
       <main className="max-w-7xl mx-auto px-4 py-6">

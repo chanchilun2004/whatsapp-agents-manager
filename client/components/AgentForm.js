@@ -14,7 +14,7 @@ const AgentForm = ({ agent, onSave, onCancel }) => {
 
   const models = {
     openai: ['gpt-4o', 'gpt-4o-mini', 'gpt-4.1', 'gpt-4.1-mini', 'gpt-4.1-nano'],
-    gemini: ['gemini-2.0-flash', 'gemini-2.5-pro-preview-05-06', 'gemini-2.5-flash-preview-04-17', 'gemini-3.0-pro'],
+    gemini: ['gemini-2.5-flash-lite', 'gemini-2.5-flash', 'gemini-2.5-pro'],
   };
 
   const handleChange = (field, value) => {

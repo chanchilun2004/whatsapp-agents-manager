@@ -1,4 +1,4 @@
-const ApprovalQueue = ({ onRefresh }) => {
+const ApprovalQueue = ({ onRefresh, generating = [], registerRefresh }) => {
   const [approvals, setApprovals] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [filter, setFilter] = React.useState('pending');
@@ -6,7 +6,6 @@ const ApprovalQueue = ({ onRefresh }) => {
   const [editText, setEditText] = React.useState('');
 
   const fetchApprovals = async () => {
-    setLoading(true);
     try {
       const res = await fetch(`/api/approvals?status=${filter}`);
       const data = await res.json();
@@ -22,8 +21,14 @@ const ApprovalQueue = ({ onRefresh }) => {
     fetchApprovals();
   }, [filter]);
 
+  React.useEffect(() => {
+    if (registerRefresh) registerRefresh(fetchApprovals);
+  }, [filter]);
+
   const handleApprove = async (id) => {
-    await fetch(`/api/approvals/${id}/approve`, { method: 'POST' });
+    const res = await fetch(`/api/approvals/${id}/approve`, { method: 'POST' });
+    const data = await res.json();
+    if (data.error) { alert(data.error); return; }
     fetchApprovals();
     if (onRefresh) onRefresh();
   };
@@ -55,6 +60,72 @@ const ApprovalQueue = ({ onRefresh }) => {
     return new Date(ts).toLocaleString();
   };
 
+  const STEP_LABELS = {
+    message_received: { icon: '\u{1F4E9}', label: 'Message received' },
+    downloading_media: { icon: '\u{1F4F7}', label: 'Downloading media...' },
+    fetching_context: { icon: '\u{1F4AC}', label: 'Fetching context...' },
+    loading_memory: { icon: '\u{1F9E0}', label: 'Loading memory...' },
+    calling_llm: { icon: '\u{1F916}', label: 'AI thinking...' },
+    reply_ready: { icon: '\u2705', label: 'Draft ready' },
+  };
+
+  const GeneratingCard = ({ item }) => {
+    const [dots, setDots] = React.useState('');
+    const [elapsed, setElapsed] = React.useState(0);
+    React.useEffect(() => {
+      const interval = setInterval(() => {
+        setDots(prev => prev.length >= 3 ? '' : prev + '.');
+        setElapsed(Math.floor((Date.now() - item.startTime) / 1000));
+      }, 500);
+      return () => clearInterval(interval);
+    }, []);
+
+    const currentStep = item.step || 'message_received';
+    const stepInfo = STEP_LABELS[currentStep] || STEP_LABELS.message_received;
+    const stepKeys = Object.keys(STEP_LABELS);
+    const stepIndex = stepKeys.indexOf(currentStep);
+
+    return (
+      <div className="bg-white rounded-xl shadow-sm border border-purple-200 p-5 fade-in">
+        <div className="flex items-start justify-between mb-3">
+          <div>
+            <span className="font-semibold text-gray-800">{item.agent_name}</span>
+            <span className="text-sm text-gray-400 ml-2">just now</span>
+          </div>
+          <span className="text-xs px-2 py-1 rounded-full bg-purple-100 text-purple-700 animate-pulse">
+            Processing{dots}
+          </span>
+        </div>
+        <div className="bg-gray-50 rounded-lg p-3 mb-3">
+          <div className="text-xs text-gray-500 mb-1">Incoming from {item.trigger_sender}:</div>
+          <div className="text-sm text-gray-700">{item.trigger_text}</div>
+        </div>
+
+        {/* Progress steps */}
+        <div className="bg-purple-50 rounded-lg p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="animate-spin w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full"></div>
+            <span className="text-sm font-medium text-purple-700">
+              {stepInfo.icon} {stepInfo.label}
+            </span>
+            <span className="text-xs text-purple-400 ml-auto">{elapsed}s</span>
+          </div>
+          {/* Step progress bar */}
+          <div className="flex gap-1">
+            {stepKeys.map((key, i) => (
+              <div
+                key={key}
+                className={`h-1.5 flex-1 rounded-full transition-colors ${
+                  i <= stepIndex ? 'bg-purple-500' : 'bg-purple-200'
+                }`}
+              />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="fade-in">
       <div className="flex items-center justify-between mb-6">
@@ -73,16 +144,20 @@ const ApprovalQueue = ({ onRefresh }) => {
         </div>
       </div>
 
-      {loading ? (
-        <p className="text-center text-gray-500 py-12">Loading...</p>
-      ) : approvals.length === 0 ? (
-        <div className="text-center py-12 text-gray-500">
-          <p className="text-lg mb-2">No {filter} approvals</p>
-          {filter === 'pending' && <p>When semi-auto agents draft replies, they'll appear here for your review.</p>}
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {approvals.map(a => (
+      <div className="space-y-4">
+        {filter === 'pending' && generating.map((g, i) => (
+          <GeneratingCard key={`gen-${g.agent_id}-${i}`} item={g} />
+        ))}
+
+        {loading && approvals.length === 0 && generating.length === 0 ? (
+          <p className="text-center text-gray-500 py-12">Loading...</p>
+        ) : approvals.length === 0 && (filter !== 'pending' || generating.length === 0) ? (
+          <div className="text-center py-12 text-gray-500">
+            <p className="text-lg mb-2">No {filter} approvals</p>
+            {filter === 'pending' && <p>When semi-auto agents draft replies, they'll appear here for your review.</p>}
+          </div>
+        ) : (
+          approvals.map(a => (
             <div key={a.id} className="bg-white rounded-xl shadow-sm border p-5 fade-in">
               <div className="flex items-start justify-between mb-3">
                 <div>
@@ -138,9 +213,9 @@ const ApprovalQueue = ({ onRefresh }) => {
                 </div>
               )}
             </div>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 };
