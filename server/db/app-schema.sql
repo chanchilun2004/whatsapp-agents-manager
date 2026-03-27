@@ -73,3 +73,56 @@ CREATE TABLE IF NOT EXISTS agent_logs (
     details TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS agent_targets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    chat_name TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(agent_id, chat_jid)
+);
+
+CREATE TABLE IF NOT EXISTS client_stages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    chat_name TEXT,
+    stage TEXT NOT NULL,
+    confidence REAL,
+    reasoning TEXT,
+    previous_stage TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE(agent_id, chat_jid)
+);
+
+CREATE TABLE IF NOT EXISTS stage_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    from_stage TEXT,
+    to_stage TEXT NOT NULL,
+    reasoning TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS contact_names (
+    sender TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS client_summaries (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    agent_id INTEGER NOT NULL REFERENCES agents(id) ON DELETE CASCADE,
+    chat_jid TEXT NOT NULL,
+    chat_name TEXT,
+    summary TEXT NOT NULL,
+    needs TEXT,
+    blockers TEXT,
+    follow_ups TEXT NOT NULL,
+    sent_to TEXT,
+    sent_at DATETIME,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);

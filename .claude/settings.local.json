@@ -11,7 +11,30 @@
       "Bash(echo:*)",
       "Bash(grep:*)",
       "Bash(find:*)",
-      "WebSearch"
+      "WebSearch",
+      "Bash(npm install:*)",
+      "Bash(node -e \":*)",
+      "Bash(timeout 5 node -e \":*)",
+      "Bash(go run:*)",
+      "Bash(MCP_TRANSPORT=sse uv run main.py)",
+      "Bash(npm run:*)",
+      "Bash(python3 -m json.tool)",
+      "WebFetch(domain:help.sleekflow.io)",
+      "WebFetch(domain:sleekflow.io)",
+      "WebFetch(domain:docs.sleekflow.io)",
+      "WebFetch(domain:fixthephoto.com)",
+      "WebFetch(domain:skywork.ai)",
+      "WebFetch(domain:brandfetch.com)",
+      "Bash(node -e \"require\\(''dotenv''\\).config\\(\\); console.log\\(''MCP_SSE_URL:'', process.env.MCP_SSE_URL\\)\")",
+      "Bash(go version:*)",
+      "Bash(python3 -c \"import sys,json; agents=json.load\\(sys.stdin\\); [print\\(f''''id={a[\"\"id\"\"]} name={a[\"\"name\"\"]} role={a.get\\(\"\"role\"\"\\)}''''\\) for a in agents]\")",
+      "Bash(timeout 20 node -e \":*)",
+      "Bash(python3 -c \"import sys,json; [print\\(f''''id={a[\"\"id\"\"]} name={a[\"\"name\"\"]} role={a.get\\(\"\"role\"\"\\)} active={a.get\\(\"\"is_active\"\"\\)}''''\\) for a in json.load\\(sys.stdin\\)]\")",
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(f''''{len\\(d\\)} chats''''\\); [print\\(f''''  {c.get\\(\"\"name\"\",\"\"?\"\"\\)} \\({c.get\\(\"\"jid\"\",\"\"?\"\"\\)}\\)''''\\) for c in d[:5]]\")",
+      "Bash(xargs -I{} ls /proc/{}/fd)",
+      "Bash(python3 -c \"import sys,json; [print\\(f''''sender={m.get\\(\"\"sender\"\"\\)} name={m.get\\(\"\"sender_name\"\",\"\"N/A\"\"\\)}''''\\) for m in json.load\\(sys.stdin\\)]\")",
+      "Bash(python3 -c \"import sys,json; [print\\(f''''sender={m.get\\(\"\"sender\"\"\\)}''''\\) for m in json.load\\(sys.stdin\\)]\")",
+      "Bash(npm rebuild:*)"
     ]
   }
 }

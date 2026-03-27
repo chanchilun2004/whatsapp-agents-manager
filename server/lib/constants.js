@@ -6,6 +6,7 @@ const PIPELINE_STEPS = {
   LOADING_MEMORY: 'loading_memory',
   CALLING_LLM: 'calling_llm',
   REPLY_READY: 'reply_ready',
+  DETECTING_STAGE: 'detecting_stage',
 };
 
 // Media download timing

@@ -131,12 +131,13 @@ async function runPipeline(payload) {
       // Deliver
       emitProgress(agent.id, chat_jid, PIPELINE_STEPS.REPLY_READY, { agent_name: agent.name });
 
-      if (agent.auto_reply_mode === 'full') {
+      const effectiveMode = agent.effective_auto_reply_mode || agent.auto_reply_mode;
+      if (effectiveMode === 'full') {
         await whatsappService.sendMessage(chat_jid, reply);
         logAgentEvent(agent.id, 'reply_sent', { reply: reply.substring(0, 200), chat_jid });
         eventBus.emit('pipeline:reply_sent', { agent_id: agent.id, agent_name: agent.name, chat_jid, reply });
         console.log(`[Pipeline] Auto-replied in ${chat_name || chat_jid} via agent "${agent.name}"`);
-      } else if (agent.auto_reply_mode === 'semi') {
+      } else if (effectiveMode === 'semi') {
         const triggerText = hasText ? content : `[Image: ${media_type}]`;
         const approval = approvalService.createApproval({
           agent_id: agent.id, chat_jid, trigger_message_id: id,
@@ -153,9 +154,52 @@ async function runPipeline(payload) {
         console.warn(`[Pipeline] Memory extraction failed for agent ${agent.id}:`, err.message);
       });
 
+      // Stage detection is handled by autoDetectStages after the loop (avoids duplicates)
+
     } catch (err) {
       console.error(`[Pipeline] Error processing agent "${agent.name}":`, err.message);
       logAgentEvent(agent.id, 'error', { error: err.message, chat_jid, message_id: id });
+    }
+  }
+
+  // Auto-detect stage for ALL role agents watching this chat (including off-mode, once per agent)
+  autoDetectStages(chat_jid, chat_name).catch(err => {
+    console.warn(`[Pipeline] Auto stage detection failed:`, err.message);
+  });
+}
+
+// Auto-detect stage for ALL role agents watching this chat (including off-mode)
+async function autoDetectStages(chatJid, chatName) {
+  const { getDb } = require('../db/app-db');
+  const { detectAndUpdateStage } = require('./stage.service');
+  const db = getDb();
+
+  const roleAgents = db.prepare(`
+    SELECT DISTINCT a.* FROM agents a
+    JOIN agent_targets at ON a.id = at.agent_id
+    WHERE at.chat_jid = ? AND a.is_active = 1 AND a.role != 'general'
+  `).all(chatJid);
+
+  if (roleAgents.length === 0) return;
+
+  // Fetch context once, use max context_message_count across agents
+  const maxContext = Math.max(...roleAgents.map(a => a.context_message_count || 20));
+  const contextMessages = await whatsappService.getConversationContext(chatJid, maxContext);
+  const messages = Array.isArray(contextMessages) ? contextMessages : [];
+  if (messages.length === 0) return;
+
+  for (const agent of roleAgents) {
+    try {
+      const result = await detectAndUpdateStage(agent.id, chatJid, messages, agent.role, chatName);
+      if (result) {
+        eventBus.emit('pipeline:stage_updated', {
+          agent_id: agent.id, chat_jid: chatJid, chat_name: chatName,
+          stage: result.stage, previous_stage: result.previous_stage,
+          confidence: result.confidence, reasoning: result.reasoning,
+        });
+      }
+    } catch (err) {
+      console.warn(`[Pipeline] Auto stage detect failed for agent ${agent.id}:`, err.message);
     }
   }
 }

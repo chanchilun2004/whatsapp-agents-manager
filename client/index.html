@@ -14,16 +14,30 @@
       theme: {
         extend: {
           colors: {
-            whatsapp: '#25D366',
-            'whatsapp-dark': '#128C7E',
-            'whatsapp-light': '#DCF8C6',
+            brand: {
+              50: '#F5F3FF',
+              100: '#EDE9FE',
+              200: '#DDD6FE',
+              300: '#C4B5FD',
+              400: '#A78BFA',
+              500: '#7C3AED',
+              600: '#6D28D9',
+              700: '#5B21B6',
+              800: '#4C1D95',
+              900: '#2E1065',
+            },
+            sidebar: '#1E1B2E',
+            'sidebar-hover': '#2D2A3E',
+            'sidebar-active': '#3D3A4E',
+            surface: '#FFFFFF',
+            muted: '#F8F9FA',
           }
         }
       }
     }
   </script>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body class="bg-white min-h-screen">
   <div id="root"></div>
   <script type="text/babel" src="/components/Header.js"></script>
   <script type="text/babel" src="/components/AgentList.js"></script>
@@ -32,7 +46,8 @@
   <script type="text/babel" src="/components/ConversationViewer.js"></script>
   <script type="text/babel" src="/components/ApprovalQueue.js"></script>
   <script type="text/babel" src="/components/SettingsPage.js"></script>
-  <script type="text/babel" src="/components/RemindersPage.js"></script>
+  <script type="text/babel" src="/components/PipelineView.js"></script>
+  <script type="text/babel" src="/components/SummariesPage.js"></script>
   <script type="text/babel" src="/app.js"></script>
 </body>
 </html>

@@ -27,6 +27,12 @@ function getDb() {
     seedSettings.run('openai_api_key', config.openaiApiKey);
     seedSettings.run('gemini_api_key', config.geminiApiKey);
     seedSettings.run('reminder_recipient_phone', '85291757723');
+    seedSettings.run('digest_enabled', 'false');
+    seedSettings.run('digest_time', '09:00');
+
+    // Migrations for existing databases
+    try { db.exec("ALTER TABLE agents ADD COLUMN role TEXT NOT NULL DEFAULT 'general'"); } catch {}
+    try { db.exec("ALTER TABLE agent_targets ADD COLUMN auto_reply_mode TEXT DEFAULT NULL"); } catch {}
   }
   return db;
 }

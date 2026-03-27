@@ -1,5 +1,6 @@
 const { getDb } = require('../db/app-db');
 const { getApiKey } = require('./llm/index');
+const { callLlmForJson } = require('./llm/json-call');
 
 const EXTRACTION_PROMPT_TEMPLATE = `You are a memory extraction assistant. Given a conversation exchange, do two things:
 
@@ -12,28 +13,6 @@ Respond in JSON only:
 If there are no noteworthy facts, use: {"summary": "...", "facts": []}
 
 User message: `;
-
-async function callLlmForJson(provider, apiKey, prompt) {
-  if (provider === 'openai') {
-    const OpenAI = require('openai');
-    const client = new OpenAI({ apiKey });
-    const response = await client.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 256,
-      response_format: { type: 'json_object' },
-    });
-    return JSON.parse(response.choices[0].message.content);
-  }
-  const { GoogleGenerativeAI } = require('@google/generative-ai');
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({
-    model: 'gemini-2.5-flash',
-    generationConfig: { maxOutputTokens: 256, responseMimeType: 'application/json' },
-  });
-  const response = await model.generateContent(prompt);
-  return JSON.parse(response.response.text());
-}
 
 async function extractMemory(agentId, chatJid, triggerMessage, replyText, provider) {
   try {

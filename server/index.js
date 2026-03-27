@@ -10,6 +10,8 @@ const { mcpClient } = require('./services/mcp-client');
 const eventBus = require('./lib/eventBus');
 const { PIPELINE_STEPS } = require('./lib/constants');
 
+const contactCache = require('./services/contact-cache');
+
 const app = express();
 const server = http.createServer(app);
 
@@ -66,6 +68,14 @@ eventBus.on('pipeline:reply_sent', (data) => {
   wsBroadcast('reply_sent', data);
 });
 
+eventBus.on('pipeline:stage_changed', (data) => {
+  wsBroadcast('stage_changed', data);
+});
+
+eventBus.on('pipeline:stage_updated', (data) => {
+  wsBroadcast('stage_updated', data);
+});
+
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -76,16 +86,38 @@ app.use(express.static(path.join(__dirname, '..', 'client')));
 // Webhook endpoint (receives from Go bridge)
 app.post('/webhook/message', async (req, res) => {
   try {
+    const msg = req.body;
     console.log('[Webhook] Received:', JSON.stringify({
-      id: req.body.id?.substring(0, 12),
-      chat_jid: req.body.chat_jid,
-      sender: req.body.sender,
-      is_from_me: req.body.is_from_me,
-      content: (req.body.content || '').substring(0, 30),
-      media_type: req.body.media_type,
+      id: msg.id?.substring(0, 12),
+      chat_jid: msg.chat_jid,
+      sender: msg.sender,
+      is_from_me: msg.is_from_me,
+      content: (msg.content || '').substring(0, 30),
+      media_type: msg.media_type,
     }));
     res.json({ received: true });
-    await handleIncomingMessage(req.body);
+    // Cache sender name from webhook PushName (memory + DB)
+    if (msg.sender && msg.sender_name) {
+      contactCache.set(msg.sender, msg.sender_name);
+      try {
+        const { getDb } = require('./db/app-db');
+        getDb().prepare('INSERT OR REPLACE INTO contact_names (sender, name, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)')
+          .run(msg.sender, msg.sender_name);
+      } catch {}
+    }
+    // Broadcast new message to all WS clients immediately
+    wsBroadcast('new_message', {
+      id: msg.id,
+      chat_jid: msg.chat_jid,
+      sender: msg.sender,
+      sender_name: msg.sender_name || contactCache.get(msg.sender),
+      content: msg.content,
+      timestamp: msg.timestamp,
+      is_from_me: msg.is_from_me,
+      media_type: msg.media_type,
+      chat_name: msg.chat_name,
+    });
+    await handleIncomingMessage(msg);
   } catch (err) {
     console.error('[Webhook] Error:', err.message);
   }
@@ -96,7 +128,8 @@ app.use('/api/agents', require('./routes/agents.routes'));
 app.use('/api/chats', require('./routes/chats.routes'));
 app.use('/api/approvals', require('./routes/approvals.routes'));
 app.use('/api/settings', require('./routes/settings.routes'));
-app.use('/api/reminders', require('./routes/reminders.routes'));
+app.use('/api/pipeline', require('./routes/pipeline.routes'));
+app.use('/api/summaries', require('./routes/summaries.routes'));
 
 // Health check
 app.get('/api/status', async (req, res) => {
@@ -134,3 +167,7 @@ server.listen(config.port, () => {
 mcpClient.connect().catch(err => {
   console.warn('[MCP] Initial connection failed (will retry on first request):', err.message);
 });
+
+// Start scheduled digest
+const { scheduleDigest } = require('./services/summary.service');
+scheduleDigest();
