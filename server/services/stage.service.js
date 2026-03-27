@@ -1,6 +1,7 @@
 const { getDb } = require('../db/app-db');
 const { callLlmForJsonAuto } = require('./llm/json-call');
 const eventBus = require('../lib/eventBus');
+const { buildTranscript } = require('../lib/transcript');
 
 const STAGE_DEFINITIONS = {
   sales: {
@@ -33,10 +34,7 @@ async function detectStage(agentId, chatJid, conversationMessages, role) {
   const stageList = getValidStages(role);
   if (stageList.length === 0) return null;
 
-  const transcript = conversationMessages.map(m => {
-    const sender = m.is_from_me ? 'Agent' : (m.sender || 'Client');
-    return `[${sender}]: ${m.content || '[media]'}`;
-  }).join('\n');
+  const transcript = buildTranscript(conversationMessages);
 
   const stageDescriptions = role === 'sales'
     ? 'lead (initial contact, no qualification yet), qualified (needs identified, budget/authority discussed), proposal (proposal sent or being discussed), negotiation (terms being negotiated), closed_won (deal done), closed_lost (deal lost/rejected)'

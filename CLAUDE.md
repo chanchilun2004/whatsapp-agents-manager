@@ -29,6 +29,8 @@ Sales/Customer Success AI Agent Platform — an LLM-powered WhatsApp monitoring 
 - **Deduplication**: `pipeline.js` uses an in-memory Map with TTL to prevent double-processing messages.
 - **Gemini thinking budget**: `json-call.js` sets `thinkingBudget: 0` for Gemini 2.5 flash JSON calls. Without this, thinking tokens consume most of `maxOutputTokens` and truncate the JSON output.
 - **Gemini chat format**: Gemini requires the first message in history to have role `user`. The LLM service skips leading assistant messages.
+- **Shared constants**: Client-side shared constants (STAGE_COLORS, MODE_LABELS, MODE_COLORS, ROLE_LABELS, utility functions) live in `client/lib/shared.js` (loaded as plain script before components). Server-side shared transcript building is in `server/lib/transcript.js`. Do NOT duplicate these in component files.
+- **Parallel stage detection**: `autoDetectStages` in `pipeline.js` runs LLM calls for multiple agents in parallel via `Promise.all`, not sequentially.
 
 ## UI Design
 
@@ -117,10 +119,14 @@ server/
   config.js               # Env config
   db/app-db.js            # SQLite connection + migrations
   db/app-schema.sql       # Schema (agents, agent_targets, client_stages, stage_history, client_summaries, contact_names, approvals, settings, agent_logs, agent_memory)
+  lib/
+    constants.js          # Pipeline steps enum
+    eventBus.js           # Shared event emitter
+    transcript.js         # buildTranscript() — shared chat-to-text conversion
   services/
     mcp-client.js         # MCP SSE client (singleton)
     whatsapp.service.js   # WhatsApp operations (wraps MCP client)
-    pipeline.js           # Message processing pipeline + async stage detection
+    pipeline.js           # Message processing pipeline + parallel stage detection
     webhook.service.js    # Incoming message handler
     agent.service.js      # Agent CRUD + target management + per-chat mode
     approval.service.js   # Approval queue (semi-auto mode)
@@ -145,6 +151,8 @@ client/
   index.html              # SPA shell (React + Tailwind via CDN)
   style.css               # Custom styles (chat bubbles, scrollbar, sidebar tooltip)
   app.js                  # Main React app (WebSocket handler, routing)
+  lib/
+    shared.js             # Shared constants (STAGE_COLORS, MODE_LABELS, etc.) and utilities
   components/
     Header.js             # Left icon sidebar navigation (SleekFlow-style)
     AgentList.js          # Agent dropdown + chat list with stage/mode badges

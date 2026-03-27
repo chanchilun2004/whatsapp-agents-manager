@@ -154,25 +154,26 @@ const AgentForm = ({ agent, onSave, onCancel }) => {
         const currentTargets = await currentRes.json();
         const currentJids = new Set(currentTargets.map(t => t.chat_jid));
         const newJids = new Set(targets.map(t => t.chat_jid));
+        const ops = [];
         for (const t of targets) {
           if (!currentJids.has(t.chat_jid)) {
-            await fetch(`/api/agents/${agentId}/targets`, {
+            ops.push(fetch(`/api/agents/${agentId}/targets`, {
               method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ chat_jid: t.chat_jid, chat_name: t.chat_name, auto_reply_mode: t.auto_reply_mode }),
-            });
+            }));
           } else {
-            // Update mode if changed
-            await fetch(`/api/agents/${agentId}/targets/${encodeURIComponent(t.chat_jid)}/mode`, {
+            ops.push(fetch(`/api/agents/${agentId}/targets/${encodeURIComponent(t.chat_jid)}/mode`, {
               method: 'PATCH', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ auto_reply_mode: t.auto_reply_mode || 'default' }),
-            });
+            }));
           }
         }
         for (const t of currentTargets) {
           if (!newJids.has(t.chat_jid)) {
-            await fetch(`/api/agents/${agentId}/targets/${encodeURIComponent(t.chat_jid)}`, { method: 'DELETE' });
+            ops.push(fetch(`/api/agents/${agentId}/targets/${encodeURIComponent(t.chat_jid)}`, { method: 'DELETE' }));
           }
         }
+        await Promise.all(ops);
       }
     } finally {
       setSaving(false);
@@ -288,8 +289,6 @@ const AgentForm = ({ agent, onSave, onCancel }) => {
               <div className="mb-2 space-y-1">
                 {targets.map(t => {
                   const effectiveMode = t.auto_reply_mode || form.auto_reply_mode;
-                  const modeLabel = { off: 'Off', semi: 'Semi', full: 'Full' };
-                  const modeColor = { off: 'bg-gray-400', semi: 'bg-amber-400', full: 'bg-emerald-400' };
                   return (
                     <div key={t.chat_jid} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm ${
                       getAiReason(t.chat_jid) ? 'bg-brand-50/50 border-brand-200' : 'bg-gray-50 border-gray-100'}`}>
@@ -302,12 +301,12 @@ const AgentForm = ({ agent, onSave, onCancel }) => {
                         onChange={(e) => setTargetMode(t.chat_jid, e.target.value)}
                         className="text-[11px] border rounded px-1.5 py-0.5 bg-white focus:outline-none focus:ring-1 focus:ring-brand-500"
                       >
-                        <option value="default">Default ({modeLabel[form.auto_reply_mode]})</option>
+                        <option value="default">Default ({MODE_LABELS[form.auto_reply_mode]})</option>
                         <option value="off">Off</option>
                         <option value="semi">Semi-Auto</option>
                         <option value="full">Full-Auto</option>
                       </select>
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${modeColor[effectiveMode]}`} title={modeLabel[effectiveMode]}></span>
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${MODE_COLORS[effectiveMode]}`} title={MODE_LABELS[effectiveMode]}></span>
                       <button type="button" onClick={() => toggleChat({ jid: t.chat_jid, name: t.chat_name })}
                         className="text-gray-400 hover:text-red-500 shrink-0">
                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">

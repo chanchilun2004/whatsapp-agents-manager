@@ -217,19 +217,7 @@ const ConversationViewer = ({ agent, chatJid, chatNameProp, onBack, lastWsMessag
   };
 
   const handleKeyDown = (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSend(); } };
-  const formatTime = (ts) => ts ? new Date(ts).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
-
-  const stageColors = {
-    lead: '#6B7280', qualified: '#3B82F6', proposal: '#7C3AED', negotiation: '#F59E0B',
-    closed_won: '#10B981', closed_lost: '#EF4444',
-    onboarding: '#3B82F6', active: '#10B981', at_risk: '#F59E0B', churned: '#EF4444', renewal: '#7C3AED',
-  };
-
-  const parseJson = (str) => {
-    if (!str) return [];
-    if (Array.isArray(str)) return str;
-    try { return JSON.parse(str); } catch { return []; }
-  };
+  const formatTime = formatTimestamp;
 
   return (
     <div className="flex h-full">
@@ -253,7 +241,7 @@ const ConversationViewer = ({ agent, chatJid, chatNameProp, onBack, lastWsMessag
               {isRoleAgent && stageInfo && (
                 <>
                   <span className="text-gray-300">·</span>
-                  <span className="px-1.5 py-0.5 rounded text-[10px] text-white font-medium" style={{ backgroundColor: stageColors[stageInfo.stage] || '#6B7280' }}>
+                  <span className="px-1.5 py-0.5 rounded text-[10px] text-white font-medium" style={{ backgroundColor: STAGE_COLORS[stageInfo.stage] || '#6B7280' }}>
                     {(stageInfo.stage || '').replace('_', ' ')}
                   </span>
                 </>
@@ -404,7 +392,7 @@ const ConversationViewer = ({ agent, chatJid, chatNameProp, onBack, lastWsMessag
               </div>
               {stageInfo ? (
                 <div>
-                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: stageColors[stageInfo.stage] || '#6B7280' }}>
+                  <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium text-white" style={{ backgroundColor: STAGE_COLORS[stageInfo.stage] || '#6B7280' }}>
                     {(stageInfo.stage || '').replace('_', ' ')}
                   </span>
                   {stageInfo.confidence != null && (
@@ -435,7 +423,7 @@ const ConversationViewer = ({ agent, chatJid, chatNameProp, onBack, lastWsMessag
                 <div>
                   <p className="text-xs text-gray-600 leading-relaxed">{latestSummary.summary}</p>
                   {(() => {
-                    const followUps = parseJson(latestSummary.follow_ups);
+                    const followUps = parseJsonSafe(latestSummary.follow_ups);
                     return followUps.length > 0 && (
                       <div className="mt-3">
                         <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">Follow-ups</span>

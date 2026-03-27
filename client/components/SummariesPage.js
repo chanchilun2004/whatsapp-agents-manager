@@ -70,12 +70,6 @@ const SummariesPage = () => {
   const priorityColors = { high: 'text-red-600 font-semibold', normal: 'text-gray-700', low: 'text-gray-400' };
   const priorityBadge = { high: 'bg-red-100 text-red-700', normal: 'bg-gray-100 text-gray-600', low: 'bg-gray-50 text-gray-400' };
 
-  const parseJson = (str) => {
-    if (!str) return [];
-    if (Array.isArray(str)) return str;
-    try { return JSON.parse(str); } catch { return []; }
-  };
-
   const formatTime = (ts) => {
     if (!ts) return '';
     return new Date(ts).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -123,9 +117,9 @@ const SummariesPage = () => {
       ) : (
         <div className="space-y-4">
           {summaries.map(summary => {
-            const needs = parseJson(summary.needs);
-            const blockers = parseJson(summary.blockers);
-            const followUps = parseJson(summary.follow_ups);
+            const needs = parseJsonSafe(summary.needs);
+            const blockers = parseJsonSafe(summary.blockers);
+            const followUps = parseJsonSafe(summary.follow_ups);
 
             return (
               <div key={summary.id} className="bg-white rounded-xl shadow-sm border p-5">

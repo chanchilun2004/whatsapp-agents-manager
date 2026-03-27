@@ -31,17 +31,6 @@ const PipelineView = ({ onViewConversation }) => {
     return () => clearInterval(interval);
   }, [role]);
 
-  // Listen for stage_changed WS events
-  React.useEffect(() => {
-    const handler = (event) => {
-      try {
-        const { event: evtType } = JSON.parse(event.data);
-        if (evtType === 'stage_changed') fetchData();
-      } catch {}
-    };
-    // We'll just re-fetch on interval, the WS is handled by App
-  }, []);
-
   const stageDefs = definitions?.[role]?.stages || [];
 
   const handleOverride = async () => {
@@ -58,16 +47,6 @@ const PipelineView = ({ onViewConversation }) => {
     } catch (err) {
       alert('Failed to update stage: ' + err.message);
     }
-  };
-
-  const timeAgo = (dateStr) => {
-    if (!dateStr) return '';
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
   };
 
   const renderCard = (item) => (

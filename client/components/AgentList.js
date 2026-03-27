@@ -1,8 +1,4 @@
 const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onCreate, selectedAgent, selectedChatJid, onSelectAgent, lastStageUpdate }) => {
-  const modeLabels = { off: 'Manual', semi: 'Semi-Auto', full: 'Full-Auto' };
-  const modeColors = { off: 'bg-gray-400', semi: 'bg-amber-400', full: 'bg-emerald-400' };
-  const roleLabels = { general: 'General', sales: 'Sales', customer_success: 'CS' };
-
   const [targets, setTargets] = React.useState({});
   const [stages, setStages] = React.useState({});
   const [chatList, setChatList] = React.useState([]);
@@ -12,12 +8,6 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
   const [contextMenu, setContextMenu] = React.useState(null);
   const [filter, setFilter] = React.useState('all');
   const dropdownRef = React.useRef(null);
-
-  const stageColors = {
-    lead: '#6B7280', qualified: '#3B82F6', proposal: '#7C3AED', negotiation: '#F59E0B',
-    closed_won: '#10B981', closed_lost: '#EF4444',
-    onboarding: '#3B82F6', active: '#10B981', at_risk: '#F59E0B', churned: '#EF4444', renewal: '#7C3AED',
-  };
 
   // Fetch targets and stages for role agents
   React.useEffect(() => {
@@ -43,10 +33,12 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
     });
   }, [agents]);
 
-  // Update stages from WebSocket
+  // Update stages from WebSocket (skip if unchanged)
   React.useEffect(() => {
     if (!lastStageUpdate || !lastStageUpdate.agent_id || !lastStageUpdate.chat_jid) return;
     setStages(prev => {
+      const existing = prev[lastStageUpdate.agent_id]?.[lastStageUpdate.chat_jid]?.stage;
+      if (existing === lastStageUpdate.stage) return prev;
       const agentStages = { ...(prev[lastStageUpdate.agent_id] || {}) };
       agentStages[lastStageUpdate.chat_jid] = { stage: lastStageUpdate.stage };
       return { ...prev, [lastStageUpdate.agent_id]: agentStages };
@@ -105,20 +97,6 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
     setContextMenu({ x: e.clientX, y: e.clientY, agent });
   };
 
-  const getInitials = (name) => {
-    if (!name) return '?';
-    const parts = name.split(' ').filter(Boolean);
-    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
-    return name[0].toUpperCase();
-  };
-
-  const avatarColors = ['bg-violet-500', 'bg-blue-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-cyan-500', 'bg-indigo-500', 'bg-pink-500'];
-  const getAvatarColor = (name) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return avatarColors[Math.abs(hash) % avatarColors.length];
-  };
-
   const filteredAgents = agents.filter(a => {
     if (filter === 'active') return a.is_active;
     if (filter === 'inactive') return !a.is_active;
@@ -156,8 +134,8 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
                 <div className="flex-1 min-w-0">
                   <div className="text-sm font-medium text-gray-800 truncate leading-tight">{selectedAgent.name}</div>
                   <div className="text-[11px] text-gray-400 leading-tight flex items-center gap-1">
-                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${modeColors[selectedAgent.auto_reply_mode]}`}></span>
-                    {modeLabels[selectedAgent.auto_reply_mode]}
+                    <span className={`inline-block w-1.5 h-1.5 rounded-full ${MODE_COLORS[selectedAgent.auto_reply_mode]}`}></span>
+                    {MODE_LABELS[selectedAgent.auto_reply_mode]}
                     <span className="text-gray-300 mx-0.5">/</span>
                     {selectedAgent.llm_model}
                   </div>
@@ -202,9 +180,9 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
                     <div className="flex-1 min-w-0">
                       <div className={`text-sm font-medium truncate ${!agent.is_active ? 'text-gray-400' : 'text-gray-800'}`}>{agent.name}</div>
                       <div className="text-[11px] text-gray-400 flex items-center gap-1">
-                        <span className="bg-gray-100 text-gray-500 px-1.5 py-0 rounded text-[10px]">{roleLabels[agent.role || 'general']}</span>
-                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${modeColors[agent.auto_reply_mode]}`}></span>
-                        <span>{modeLabels[agent.auto_reply_mode]}</span>
+                        <span className="bg-gray-100 text-gray-500 px-1.5 py-0 rounded text-[10px]">{ROLE_LABELS[agent.role || 'general']}</span>
+                        <span className={`inline-block w-1.5 h-1.5 rounded-full ${MODE_COLORS[agent.auto_reply_mode]}`}></span>
+                        <span>{MODE_LABELS[agent.auto_reply_mode]}</span>
                       </div>
                     </div>
                     {selectedAgent?.id === agent.id && (
@@ -341,8 +319,8 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
                     <span className="text-white text-xs font-bold">{getInitials(chat.name)}</span>
                   </div>
                   {/* Mode indicator dot */}
-                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${modeColors[effectiveMode]}`}
-                    title={modeLabels[effectiveMode]}></span>
+                  <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${MODE_COLORS[effectiveMode]}`}
+                    title={MODE_LABELS[effectiveMode]}></span>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-1.5">
@@ -354,7 +332,7 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
                     {/* Stage badge */}
                     {isRole && chat.stage ? (
                       <span className="text-[10px] font-medium text-white px-1.5 py-0 rounded"
-                        style={{ backgroundColor: stageColors[chat.stage] || '#6B7280' }}>
+                        style={{ backgroundColor: STAGE_COLORS[chat.stage] || '#6B7280' }}>
                         {chat.stage.replace('_', ' ')}
                       </span>
                     ) : null}
@@ -364,7 +342,7 @@ const AgentList = ({ agents, onEdit, onToggle, onDelete, onViewConversation, onC
                         effectiveMode === 'full' ? 'bg-emerald-50 text-emerald-600' :
                         effectiveMode === 'semi' ? 'bg-amber-50 text-amber-600' :
                         'bg-gray-100 text-gray-500'}`}>
-                        {modeLabels[effectiveMode]}
+                        {MODE_LABELS[effectiveMode]}
                       </span>
                     )}
                     {/* Fallback text */}

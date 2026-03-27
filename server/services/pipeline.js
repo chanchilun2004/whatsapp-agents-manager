@@ -188,7 +188,7 @@ async function autoDetectStages(chatJid, chatName) {
   const messages = Array.isArray(contextMessages) ? contextMessages : [];
   if (messages.length === 0) return;
 
-  for (const agent of roleAgents) {
+  await Promise.all(roleAgents.map(async (agent) => {
     try {
       const result = await detectAndUpdateStage(agent.id, chatJid, messages, agent.role, chatName);
       if (result) {
@@ -201,7 +201,7 @@ async function autoDetectStages(chatJid, chatName) {
     } catch (err) {
       console.warn(`[Pipeline] Auto stage detect failed for agent ${agent.id}:`, err.message);
     }
-  }
+  }));
 }
 
 module.exports = { runPipeline };

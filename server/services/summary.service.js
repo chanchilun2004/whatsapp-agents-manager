@@ -2,6 +2,7 @@ const { getDb } = require('../db/app-db');
 const { callLlmForJsonAuto } = require('./llm/json-call');
 const whatsappService = require('./whatsapp.service');
 const { getStage } = require('./stage.service');
+const { buildTranscript } = require('../lib/transcript');
 const cron = require('node-cron');
 
 let digestJob = null;
@@ -16,10 +17,7 @@ async function generateClientSummary(agentId, chatJid, chatName) {
 
   if (messages.length === 0) return null;
 
-  const transcript = messages.map(m => {
-    const sender = m.is_from_me ? 'Agent' : (m.sender || 'Client');
-    return `[${sender}]: ${m.content || '[media]'}`;
-  }).join('\n');
+  const transcript = buildTranscript(messages);
 
   // Get current stage if available
   const stageInfo = getStage(agentId, chatJid);
